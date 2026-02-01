@@ -48,9 +48,10 @@
     </div>
   </div>
 
-  <!-- 内置轻量二维码生成（无外部CDN） -->
+  <!-- 本地二维码库（无外部 CDN）：qrcode-generator -->
+  <script src="./assets/qrcode-generator.js"></script>
   <script>
-    // 你的收款地址（来自你的要求）
+    // 你的收款地址
     const ADDRESS = 'bc1p26d9hh7fahfxe40pv394mewq7fazzaqwt427t59j2mcszpvhd0wql4682h';
 
     const addrEl = document.getElementById('addr');
@@ -68,34 +69,45 @@
       return uri;
     }
 
-    // 极简二维码：用浏览器内置 BarcodeDetector 不可靠；这里用简化版“QR from scratch”太长。
-    // 采用 canvas 直接绘制占位图 + 文本（仍然可用链接；如需真正QR我可加本地qrcode库文件）。
-    function drawPlaceholder(text){
+    function drawQr(text){
       const c = document.getElementById('qr');
       const ctx = c.getContext('2d');
-      const size = 260;
-      c.width = size; c.height = size;
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
-      ctx.fillStyle = '#111';
-      ctx.font = '14px system-ui';
-      ctx.fillText('请用链接收款：', 16, 34);
-      ctx.font = '12px ui-monospace,Consolas,monospace';
-      const lines = [];
-      for(let i=0;i<text.length;i+=26) lines.push(text.slice(i,i+26));
-      let y = 60;
-      for(const line of lines.slice(0,14)){
-        ctx.fillText(line, 16, y);
-        y += 16;
+
+      // 生成二维码矩阵
+      // 说明：qrcode(typeNumber, errorCorrectionLevel)
+      // typeNumber=0 让库自动选择版本；纠错等级用 M（中等）
+      const qr = qrcode(0, 'M');
+      qr.addData(text);
+      qr.make();
+
+      const count = qr.getModuleCount();
+      const cell = 6; // 每个模块像素大小（可调）
+      const pad = 10; // 留白
+
+      const size = count * cell + pad * 2;
+      c.width = size;
+      c.height = size;
+
+      // 白底
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, size, size);
+
+      // 绘制模块
+      ctx.fillStyle = '#000';
+      for (let r = 0; r < count; r++) {
+        for (let col = 0; col < count; col++) {
+          if (qr.isDark(r, col)) {
+            ctx.fillRect(pad + col * cell, pad + r * cell, cell, cell);
+          }
+        }
       }
-      ctx.strokeStyle = '#ddd';
-      ctx.strokeRect(8,8,size-16,size-16);
     }
 
     function refresh(){
       const uri = makeBip21();
       linkEl.textContent = uri;
       linkEl.href = uri;
-      drawPlaceholder(uri);
+      drawQr(uri);
     }
 
     btn.addEventListener('click', refresh);
