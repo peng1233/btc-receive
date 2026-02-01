@@ -21,16 +21,16 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Build release zip
+      - name: Generate daily tool zip
         id: build
         run: |
-          python tools/build_release_zip.py | tee dist_path.txt
+          python tools/generate_daily_tool.py | tee dist_path.txt
           echo "zip_path=$(cat dist_path.txt)" >> $GITHUB_OUTPUT
 
       - name: Compute tag
         id: tag
         run: |
-          TAG=auto-$(date -u +"%Y%m%d-%H%M%S")
+          TAG=tool-$(date -u +"%Y%m%d")
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
@@ -39,7 +39,7 @@ jobs:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: ${{ steps.tag.outputs.tag }}
           body: |
-            Automated release.
+            Daily offline tool release.
 
             BTC donation address:
             bc1p26d9hh7fahfxe40pv394mewq7fazzaqwt427t59j2mcszpvhd0wql4682h
