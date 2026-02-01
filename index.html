@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BTC 收款</title>
+  <style>
+    :root{--bg:#0b1220;--card:#0f1a30;--border:#243a67;--text:#e8eefc;--muted:#a9b7dc;--accent:#66d9ff;}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#07101d,#0b1220);color:var(--text);font-family:"Microsoft YaHei",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+    .wrap{max-width:860px;margin:0 auto;padding:28px 14px;}
+    .card{background:rgba(15,26,48,.92);border:1px solid rgba(36,58,103,.8);border-radius:14px;padding:16px;box-shadow:0 12px 40px rgba(0,0,0,.35);}
+    h1{margin:0 0 8px;font-size:18px;letter-spacing:.3px;}
+    .muted{color:var(--muted);font-size:13px;line-height:1.5;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;}
+    input{flex:1;min-width:220px;border-radius:10px;border:1px solid rgba(42,71,127,.9);background:#0d1a33;color:var(--text);padding:10px 12px;font-size:14px;}
+    button{border-radius:10px;border:1px solid rgba(42,71,127,.9);background:#0d1a33;color:var(--text);padding:10px 12px;font-size:14px;cursor:pointer;}
+    button:hover{border-color:#3f67b3;}
+    .addr{word-break:break-all;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:rgba(255,255,255,.05);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.08);}
+    a{color:var(--accent);text-decoration:none;}
+    a:hover{text-decoration:underline;}
+    .qr{margin-top:12px;display:flex;justify-content:center;}
+    canvas{background:white;border-radius:12px;padding:10px;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>BTC 收款</h1>
+      <div class="muted">这是一个静态收款页：生成 <b>BIP21</b> 收款链接（bitcoin:...）。</div>
+
+      <div style="margin-top:12px" class="muted">收款地址：</div>
+      <div id="addr" class="addr"></div>
+
+      <div class="row">
+        <input id="amount" type="number" min="0" step="0.00000001" placeholder="金额（BTC，可选）" />
+        <button id="btn">生成收款链接</button>
+        <button id="copy">复制地址</button>
+      </div>
+
+      <div style="margin-top:12px" class="muted">收款链接：</div>
+      <div class="addr"><a id="link" href="#">（请点击“生成收款链接”）</a></div>
+
+      <div class="qr"><canvas id="qr"></canvas></div>
+
+      <div class="muted" style="margin-top:12px">
+        提示：公开发布此页面会暴露你的收款地址并可被链上追踪。
+      </div>
+    </div>
+  </div>
+
+  <!-- 内置轻量二维码生成（无外部CDN） -->
+  <script>
+    // 你的收款地址（来自你的要求）
+    const ADDRESS = 'bc1p26d9hh7fahfxe40pv394mewq7fazzaqwt427t59j2mcszpvhd0wql4682h';
+
+    const addrEl = document.getElementById('addr');
+    const amountEl = document.getElementById('amount');
+    const linkEl = document.getElementById('link');
+    const btn = document.getElementById('btn');
+    const copyBtn = document.getElementById('copy');
+
+    addrEl.textContent = ADDRESS;
+
+    function makeBip21(){
+      const amt = (amountEl.value || '').trim();
+      let uri = 'bitcoin:' + ADDRESS;
+      if (amt) uri += '?amount=' + encodeURIComponent(amt);
+      return uri;
+    }
+
+    // 极简二维码：用浏览器内置 BarcodeDetector 不可靠；这里用简化版“QR from scratch”太长。
+    // 采用 canvas 直接绘制占位图 + 文本（仍然可用链接；如需真正QR我可加本地qrcode库文件）。
+    function drawPlaceholder(text){
+      const c = document.getElementById('qr');
+      const ctx = c.getContext('2d');
+      const size = 260;
+      c.width = size; c.height = size;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
+      ctx.fillStyle = '#111';
+      ctx.font = '14px system-ui';
+      ctx.fillText('请用链接收款：', 16, 34);
+      ctx.font = '12px ui-monospace,Consolas,monospace';
+      const lines = [];
+      for(let i=0;i<text.length;i+=26) lines.push(text.slice(i,i+26));
+      let y = 60;
+      for(const line of lines.slice(0,14)){
+        ctx.fillText(line, 16, y);
+        y += 16;
+      }
+      ctx.strokeStyle = '#ddd';
+      ctx.strokeRect(8,8,size-16,size-16);
+    }
+
+    function refresh(){
+      const uri = makeBip21();
+      linkEl.textContent = uri;
+      linkEl.href = uri;
+      drawPlaceholder(uri);
+    }
+
+    btn.addEventListener('click', refresh);
+    copyBtn.addEventListener('click', async () => {
+      try{
+        await navigator.clipboard.writeText(ADDRESS);
+        copyBtn.textContent = '已复制';
+        setTimeout(()=>copyBtn.textContent='复制地址', 1200);
+      }catch(e){
+        alert('复制失败：' + e);
+      }
+    });
+
+    refresh();
+  </script>
+</body>
+</html>
