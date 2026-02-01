@@ -1,0 +1,47 @@
+name: Auto Release (daily)
+
+on:
+  schedule:
+    # daily 01:00 UTC
+    - cron: "0 1 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Build release zip
+        id: build
+        run: |
+          python tools/build_release_zip.py | tee dist_path.txt
+          echo "zip_path=$(cat dist_path.txt)" >> $GITHUB_OUTPUT
+
+      - name: Compute tag
+        id: tag
+        run: |
+          TAG=auto-$(date -u +"%Y%m%d-%H%M%S")
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          body: |
+            Automated release.
+
+            BTC donation address:
+            bc1p26d9hh7fahfxe40pv394mewq7fazzaqwt427t59j2mcszpvhd0wql4682h
+          files: |
+            ${{ steps.build.outputs.zip_path }}
