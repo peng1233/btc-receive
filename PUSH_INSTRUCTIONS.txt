@@ -1,0 +1,13 @@
+Push failed from this machine due to inability to reach github.com:443.
+
+You can push from your own computer:
+1) git clone https://github.com/peng1233/btc-receive.git
+2) Copy changes from this patch file into the repo and apply:
+   git apply btc-receive-qr.patch
+   git add -A
+   git commit -m "Add real QR code generation (offline)"
+   git push origin main
+
+Or cherry-pick by commit if you have this repo locally and can pull from a shared remote.
+
+Patch file created: btc-receive-qr.patch (one commit)
