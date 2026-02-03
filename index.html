@@ -1,9 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BTC 鏀舵</title>
+  <title>BTC 收款</title>
   <style>
     :root{--bg:#0b1220;--card:#0f1a30;--border:#243a67;--text:#e8eefc;--muted:#a9b7dc;--accent:#66d9ff;--bad:#ff6b6b;--ok:#4fffbf;}
     html,body{height:100%;margin:0;background:linear-gradient(180deg,#07101d,#0b1220);color:var(--text);font-family:"Microsoft YaHei",system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
@@ -29,19 +29,19 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>BTC 鏀舵</h1>
-      <div class="muted">杩欐槸涓€涓潤鎬佹敹娆鹃〉锛氱敓鎴?<b>BIP21</b> 鏀舵閾炬帴锛坆itcoin:...锛夈€?/div>
+      <h1>BTC 收款</h1>
+      <div class="muted">这是一个静态收款页：生成 <b>BIP21</b> 收款链接（bitcoin:...）。</div>
 
-      <div style="margin-top:12px" class="muted">鏀舵鍦板潃锛?/div>
+      <div style="margin-top:12px" class="muted">收款地址：</div>
       <div id="addr" class="addr"></div>
 
       <div class="row">
-        <input id="amount" type="number" min="0" step="0.00000001" placeholder="閲戦锛圔TC锛屽彲閫夛級" />
-        <button id="btn">鐢熸垚鏀舵閾炬帴</button>
-        <button id="copy">澶嶅埗鍦板潃</button>
+        <input id="amount" type="number" min="0" step="0.00000001" placeholder="金额（BTC，可选）" />
+        <button id="btn">生成收款链接</button>
+        <button id="copy">复制地址</button>
       </div>
 
-      <div class="muted" style="margin-top:6px">蹇嵎閲戦锛堢櫧鍚嶅崟锛夛細</div>
+      <div class="muted" style="margin-top:6px">快捷金额（白名单）：</div>
       <div class="row" style="margin-top:8px">
         <button class="amt" data-amt="0.00003414">0.00003414</button>
         <button class="amt mid" data-amt="0.00005678">0.00005678</button>
@@ -50,20 +50,21 @@
 
       <div id="msg" class="muted" style="margin-top:10px"></div>
 
-      <div style="margin-top:12px" class="muted">鏀舵閾炬帴锛?/div>
-      <div class="addr"><a id="link" href="#">锛堣鐐瑰嚮鈥滅敓鎴愭敹娆鹃摼鎺モ€濓級</a></div>
+      <div style="margin-top:12px" class="muted">收款链接：</div>
+      <div class="addr"><a id="link" href="#">（请点击“生成收款链接”）</a></div>
 
       <div class="qr"><canvas id="qr"></canvas></div>
 
       <div class="muted" style="margin-top:12px">
-        鎻愮ず锛氬叕寮€鍙戝竷姝ら〉闈細鏆撮湶浣犵殑鏀舵鍦板潃骞跺彲琚摼涓婅拷韪€?      </div>
+        提示：公开发布此页面会暴露你的收款地址并可被链上追踪。
+      </div>
     </div>
   </div>
 
-  <!-- 鏈湴浜岀淮鐮佸簱锛堟棤澶栭儴 CDN锛夛細qrcode-generator -->
+  <!-- 本地二维码库（无外部 CDN）：qrcode-generator -->
   <script src="./assets/qrcode-generator.js"></script>
   <script>
-    // 浣犵殑鏀舵鍦板潃
+    // 你的收款地址
     const ADDRESS = 'bc1p26d9hh7fahfxe40pv394mewq7fazzaqwt427t59j2mcszpvhd0wql4682h';
 
     const addrEl = document.getElementById('addr');
@@ -73,7 +74,7 @@
     const copyBtn = document.getElementById('copy');
     const msgEl = document.getElementById('msg');
 
-    // 閲戦鐧藉悕鍗曪紙鐢ㄤ簬鈥滈噾棰濆綊鍥犫€濇柟妗堬紝绂佹闅忔剰鏀瑰熬宸級
+    // 金额白名单（用于“金额归因”方案，禁止随意改尾差）
     const ALLOWED_AMOUNTS = ['0.00003414','0.00005678','0.00001234'];
 
     function setMsg(type, text){
@@ -89,7 +90,8 @@
     function makeBip21(){
       const amt = (amountEl.value || '').trim();
 
-      // 鍏佽涓虹┖锛涜嫢濉啓閲戦锛屽垯蹇呴』鍦ㄧ櫧鍚嶅崟鍐?      if (amt && !ALLOWED_AMOUNTS.includes(amt)) {
+      // 允许为空；若填写金额，则必须在白名单内
+      if (amt && !ALLOWED_AMOUNTS.includes(amt)) {
         return null;
       }
 
@@ -102,25 +104,24 @@
       const c = document.getElementById('qr');
       const ctx = c.getContext('2d');
 
-      // 鐢熸垚浜岀淮鐮佺煩闃?      // 璇存槑锛歲rcode(typeNumber, errorCorrectionLevel)
-      // typeNumber=0 璁╁簱鑷姩閫夋嫨鐗堟湰锛涚籂閿欑瓑绾х敤 M锛堜腑绛夛級
+      // 生成二维码矩阵
+      // 说明：qrcode(typeNumber, errorCorrectionLevel)
+      // typeNumber=0 让库自动选择版本；纠错等级用 M（中等）
       const qr = qrcode(0, 'M');
       qr.addData(text);
       qr.make();
 
       const count = qr.getModuleCount();
-      const cell = 6; // 姣忎釜妯″潡鍍忕礌澶у皬锛堝彲璋冿級
-      const pad = 10; // 鐣欑櫧
+      const cell = 6;
+      const pad = 10;
 
       const size = count * cell + pad * 2;
       c.width = size;
       c.height = size;
 
-      // 鐧藉簳
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, size, size);
 
-      // 缁樺埗妯″潡
       ctx.fillStyle = '#000';
       for (let r = 0; r < count; r++) {
         for (let col = 0; col < count; col++) {
@@ -135,10 +136,10 @@
       const uri = makeBip21();
 
       if (!uri) {
-        linkEl.textContent = '锛堥噾棰濅笉鍦ㄧ櫧鍚嶅崟锛屽凡绂佹鐢熸垚锛?;
+        linkEl.textContent = '（金额不在白名单，已禁止生成）';
         linkEl.href = '#';
-        setMsg('warn', '鎻愮ず锛氶噾棰濅笉鍦ㄧ櫧鍚嶅崟鍐呫€傝浣跨敤涓嬫柟蹇嵎閲戦鎸夐挳锛堜腑闂存寜閽负鎺ㄨ崘閲戦锛夛紝鎴栨竻绌洪噾棰濄€?);
-        // 浠嶇劧鐢熸垚鈥滅┖閲戦鈥濈殑浜岀淮鐮侊紙鍦板潃锛夛紝鏂逛究鐢ㄦ埛鐩存帴杞处
+        setMsg('warn', '提示：金额不在白名单内。请使用下方快捷金额按钮（中间按钮为推荐金额），或清空金额。');
+        // 仍然生成“空金额”的二维码（地址），方便用户直接转账
         const uriNoAmt = 'bitcoin:' + ADDRESS;
         drawQr(uriNoAmt);
         return;
@@ -149,8 +150,8 @@
       drawQr(uri);
 
       const amt = (amountEl.value || '').trim();
-      if (amt) setMsg('ok', `宸茬敓鎴愮櫧鍚嶅崟閲戦鏀舵閾炬帴锛?{amt} BTC`);
-      else setMsg('ok', '宸茬敓鎴愬湴鍧€鏀舵閾炬帴锛堟湭濉啓閲戦锛夈€?);
+      if (amt) setMsg('ok', `已生成白名单金额收款链接：${amt} BTC`);
+      else setMsg('ok', '已生成地址收款链接（未填写金额）。');
     }
 
     btn.addEventListener('click', refresh);
@@ -166,17 +167,17 @@
     amountEl.addEventListener('input', ()=>{
       const amt = (amountEl.value || '').trim();
       if (!amt) { setMsg('', ''); return; }
-      if (ALLOWED_AMOUNTS.includes(amt)) setMsg('ok', '閲戦鍦ㄧ櫧鍚嶅崟鍐咃紝鍙敓鎴愰摼鎺ャ€?);
-      else setMsg('warn', '閲戦涓嶅湪鐧藉悕鍗曞唴锛氬皢绂佹鐢熸垚锛堣鐢ㄤ笅鏂规寜閽級銆?);
+      if (ALLOWED_AMOUNTS.includes(amt)) setMsg('ok', '金额在白名单内，可生成链接。');
+      else setMsg('warn', '金额不在白名单内：将禁止生成（请用下方按钮）。');
     });
 
     copyBtn.addEventListener('click', async () => {
       try{
         await navigator.clipboard.writeText(ADDRESS);
-        copyBtn.textContent = '宸插鍒?;
-        setTimeout(()=>copyBtn.textContent='澶嶅埗鍦板潃', 1200);
+        copyBtn.textContent = '已复制';
+        setTimeout(()=>copyBtn.textContent='复制地址', 1200);
       }catch(e){
-        alert('澶嶅埗澶辫触锛? + e);
+        alert('复制失败：' + e);
       }
     });
 
